@@ -1,0 +1,64 @@
+local a = game:GetService("Players")
+local b = game:GetService("RunService")
+local c = game:GetService("Stats")
+local a = a.LocalPlayer;
+local d = nil;
+local e = nil;
+local f = nil;
+local g = nil;
+local h = Vector3.zero;
+local i = 0;
+task.spawn(function()
+	local a = {}
+	local b = 20;
+	while task.wait(1) do
+		local c, d = pcall(function()
+			return c.Network.ServerStatsItem["Data Ping"]:GetValue()
+		end)
+		if c and typeof(d) == "number" then
+			local c = d / 540;
+			table.insert(a, c)
+			if # a > b then
+				table.remove(a, 1)
+			end;
+			local b = 0;
+			for a, a in ipairs(a) do
+				b = b + a
+			end;
+			i = b / # a
+		end
+	end
+end)
+local function c(a)
+	d = a;
+	e = a:WaitForChild("HumanoidRootPart")
+	f = a:WaitForChild("Humanoid")
+	g = nil;
+	h = Vector3.zero
+end;
+if a.Character then
+	c(a.Character)
+end;
+a.CharacterAdded:Connect(c)
+b.Heartbeat:Connect(function(a)
+	if not d or not d.Parent or not e or not e.Parent or not f or f.Health <= 0 then
+		g = nil;
+		h = Vector3.zero;
+		return
+	end;
+	g = e.AssemblyLinearVelocity;
+	local a = 1 - ((1 - 0.025) ^ (a * 60))
+	a = math.clamp(a, 0.015, 0.035)
+	local b = Vector3.zero;
+	if f.MoveDirection.Magnitude > 0 then
+		b = e.CFrame.LookVector * (i * 100)
+	end;
+	h = h:Lerp(b, a)
+	e.AssemblyLinearVelocity = g + h
+end)
+b.RenderStepped:Connect(function()
+	if e and e.Parent and g then
+		e.AssemblyLinearVelocity = g;
+		g = nil
+	end
+end)
