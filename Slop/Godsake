@@ -16,7 +16,7 @@ task.spawn(function()
 			return c.Network.ServerStatsItem["Data Ping"]:GetValue()
 		end)
 		if c and typeof(d) == "number" then
-			local c = d / 540;
+			local c = d / 700;
 			table.insert(a, c)
 			if # a > b then
 				table.remove(a, 1)
