@@ -1,0 +1,200 @@
+local RS = game:GetService("RunService")
+local Z = Vector3.zero
+local P = 2 * math.pi
+local G = {}
+G.Config = {
+	m = 6,
+	b = 0.03,
+	ab = 0.3,
+	d = 6,
+	s = 0.12,
+	i = 5,
+	tp = 5000,
+	ms = 1e-3
+}
+local function f1(a, b)
+	return 1 / (1 + 1 / (P * b * a))
+end
+local function f2(a, b, c, d, e, f, g)
+	local h = (c - a) / d
+	local i = b:Lerp(h, f1(d, g))
+	local j = e + f * i.Magnitude
+	return a:Lerp(c, f1(d, j)), i
+end
+local T = {}
+local M = {}
+local cn = nil
+local function f3(a, b, c, d)
+	local e = G.Config
+	a.ln, a.lr = f2(a.ln, a.lr, b, d, e.m, e.b, e.d)
+	a.an, a.ar = f2(a.an, a.ar, c, d, e.m, e.ab, e.d)
+end
+local function f4(a)
+	a.ln, a.an = Z, Z
+	a.lr, a.ar = Z, Z
+end
+local function f5(a)
+	local b = G.Config
+	if a.ln.Magnitude < b.ms then
+		a.ln = Z
+	end
+	if a.an.Magnitude < b.ms then
+		a.an = Z
+	end
+end
+local function f6(a)
+	if a <= 0 then
+		return
+	end
+	local b = G.Config
+	local c = os.clock()
+	for d, e in T do
+		if d.Parent == nil or (c - e.lq > b.i) then
+			T[d] = nil
+			continue
+		end
+		local f = d.CFrame
+		local g = d.AssemblyCenterOfMass
+		if f == e.lc then
+			e.pd += a
+			if e.pd <= b.s then
+				continue
+			end
+			f3(e, Z, Z, a)
+		else
+			local h = if e.pd <= b.s then e.pd + a else a
+			e.pd = 0
+			local i = (g - e.lm) / h
+			local j, k = (f.Rotation * e.lc.Rotation:Inverse()):ToAxisAngle()
+			local l = if k > 1e-5 then j * (k / h) else Z
+			if i ~= i or l ~= l or i.Magnitude > b.tp then
+				f4(e)
+			else
+				f3(e, i, l, h)
+			end
+			e.lc = f
+			e.lm = g
+		end
+		f5(e)
+	end
+	if next(T) == nil and cn then
+		cn:Disconnect()
+		cn = nil
+	end
+end
+local function f7(a)
+	local b = {
+		lc = a.CFrame,
+		lm = a.AssemblyCenterOfMass,
+		ln = Z,
+		an = Z,
+		lr = Z,
+		ar = Z,
+		pd = 0,
+		lq = os.clock()
+	}
+	T[a] = b
+	return b
+end
+local function f8(a)
+	local b = T[a] or f7(a)
+	b.lq = os.clock()
+	if not cn then
+		cn = RS.Heartbeat:Connect(f6)
+	end
+	return b
+end
+local function f9(a)
+	if a == nil then
+		return nil
+	end
+	if a:IsA("BasePart") then
+		return a
+	end
+	if a:IsA("Model") then
+		local b = a
+		local c = b.PrimaryPart
+		if c then
+			return c
+		end
+		local d = M[b]
+		if d and d:IsDescendantOf(b) then
+			return d
+		end
+		local e = b:FindFirstChildWhichIsA("BasePart", true)
+		M[b] = e
+		return e
+	end
+	return nil
+end
+local function f10(a)
+	local b = a.AssemblyRootPart or a
+	local c = f8(b)
+	return c.ln, c.an, b.AssemblyCenterOfMass
+end
+function G.Get(a)
+	local b = f9(a)
+	if not b then
+		return Z, Z
+	end
+	return f10(b)
+end
+function G.GetLinear(a)
+	return G.Get(a)
+end
+function G.GetAngular(a)
+	local _, b = G.Get(a)
+	return b
+end
+function G.GetAtPosition(a, b)
+	local c = f9(a)
+	if not c then
+		return Z
+	end
+	local d, e, f = f10(c)
+	return d + e:Cross(b - f)
+end
+function G.GetLocal(a)
+	local b = f9(a)
+	if not b then
+		return Z, Z
+	end
+	local c, d = f10(b)
+	local e = b.CFrame
+	return e:VectorToObjectSpace(c), e:VectorToObjectSpace(d)
+end
+function G.GetSpeed(a)
+	return G.Get(a).Magnitude
+end
+function G.GetRelative(a, b, c)
+	local d = f9(a)
+	local e = c or (d and d.Position) or Z
+	return G.GetAtPosition(a, e) - G.GetAtPosition(b, e)
+end
+function G.Track(a)
+	local b = f9(a)
+	if b then
+		f8(b.AssemblyRootPart or b)
+	end
+end
+function G.Untrack(a)
+	local b = f9(a)
+	if b then
+		T[b.AssemblyRootPart or b] = nil
+	end
+end
+function G.Reset(a)
+	local b = f9(a)
+	if not b then
+		return
+	end
+	local c = b.AssemblyRootPart or b
+	local d = T[c]
+	if d then
+		f4(d)
+		d.lc = c.CFrame
+		d.lm = c.AssemblyCenterOfMass
+		d.pd = 0
+	end
+end
+return G
